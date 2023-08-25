@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 21 16:09:00 2023
+Created on Thu Aug 24, 2023 @ 12:07
 
 @author: louis
 """
@@ -18,6 +18,7 @@ def normalize(data):
     data = np.subtract(data, np.max(data))
     data = np.divide(data,np.min(data))
     return data
+#Data lives in the DispersionTest folder - did not want to make a second copy of it since it's large.
 sweep1_cavity = pd.read_csv("C:/Users/louis\OneDrive - University of Ottawa/uOttawa/MPL Docs/Code/DispersionTest/Data/FinalData/#1backup/Ch2.csv",  header = None)
 sweep1_HCN = pd.read_csv("C:/Users/louis/OneDrive - University of Ottawa/uOttawa\MPL Docs\Code\DispersionTest\Data\FinalData\#1backup\Ch1.csv",  header = None) #192.7385 THz
 sweep1_cavity = sweep1_cavity.iloc[:,0]
@@ -26,95 +27,95 @@ sweep2_cavity = pd.read_csv("C:/Users/louis/OneDrive - University of Ottawa/uOtt
 sweep2_HCN = pd.read_csv("C:/Users/louis/OneDrive - University of Ottawa/uOttawa\MPL Docs\Code\DispersionTest\Data\FinalData\#2\Ch1.csv", header = None) #192.6328 THz
 sweep2_cavity = sweep2_cavity.iloc[:,0]
 sweep2_HCN = sweep2_HCN.iloc[:,0]
-calibration = pd.read_csv("C:/Users/louis/OneDrive - University of Ottawa/uOttawa\MPL Docs\Code\DispersionTest\Data\Reference_Cavity_1550nm.csv") #Yes
-x_frequencies = calibration.iloc[:,0]
-HCN_calibration = calibration.iloc[:,1]
-cavity_calibration = calibration.iloc[:,2]
+#calibration = pd.read_csv("C:/Users/louis/OneDrive - University of Ottawa/uOttawa\MPL Docs\Code\DispersionTest\Data\Reference_Cavity_1550nm.csv") #Yes
+#x_frequencies = calibration.iloc[:,0]
+#HCN_calibration = calibration.iloc[:,1]
+#cavity_calibration = calibration.iloc[:,2]
 
+# #%%
+# HCN_calibration_normalized = normalize(HCN_calibration)
+# HCN_peaks1 = find_peaks(HCN_calibration_normalized, distance = 10000, prominence = 0.1, plateau_size = 100)[0] #Order when you come back
+# HCN_peaks2 = find_peaks(HCN_calibration_normalized, distance = 10000, prominence = 0.1)[0]
+# n=0
+# delete = []
+# for peak in HCN_peaks2:
+#     if any(abs(np.subtract(HCN_peaks1, peak)) < 10000):
+#         delete.append(n)
+#     n+=1
+#     #YAGNI
+# HCN_peaks22 = np.delete(HCN_peaks2, delete)
+# #HCN_peaks2 = np.delete(HCN_peaks2, np.where(HCN_peaks == HCN_peaks2)) #If this stops working, compare element by element using for loop
+# concatenate = np.concatenate((HCN_peaks1,HCN_peaks22))
+# HCN_peaks = sorted(concatenate)
+# HCN_peak_values = HCN_calibration_normalized.iloc[HCN_peaks]
+# x_HCN_peaks = x_frequencies[HCN_peaks]
+# #You aren't going to need this cell of code...
+# diffs = abs(np.subtract(x_HCN_peaks, 195.2360e12)) #Sweep 1 (R10) - always high to low
+# first_peak = np.where(diffs == diffs.min())[0][0]
+# diffs = abs(np.subtract(x_HCN_peaks, 195.1625e12)) #Sweep 2 (R9)
+# second_peak = np.where(diffs == diffs.min())[0][0]
 #%%
-HCN_calibration_normalized = normalize(HCN_calibration)
-HCN_peaks1 = find_peaks(HCN_calibration_normalized, distance = 10000, prominence = 0.1, plateau_size = 100)[0] #Order when you come back
-HCN_peaks2 = find_peaks(HCN_calibration_normalized, distance = 10000, prominence = 0.1)[0]
-n=0
-delete = []
-for peak in HCN_peaks2:
-    if any(abs(np.subtract(HCN_peaks1, peak)) < 10000):
-        delete.append(n)
-    n+=1
-    #YAGNI
-HCN_peaks22 = np.delete(HCN_peaks2, delete)
-#HCN_peaks2 = np.delete(HCN_peaks2, np.where(HCN_peaks == HCN_peaks2)) #If this stops working, compare element by element using for loop
-concatenate = np.concatenate((HCN_peaks1,HCN_peaks22))
-HCN_peaks = sorted(concatenate)
-HCN_peak_values = HCN_calibration_normalized.iloc[HCN_peaks]
-x_HCN_peaks = x_frequencies[HCN_peaks]
-#You aren't going to need this cell of code...
-diffs = abs(np.subtract(x_HCN_peaks, 195.2360e12)) #Sweep 1 (R10) - always high to low
-first_peak = np.where(diffs == diffs.min())[0][0]
-diffs = abs(np.subtract(x_HCN_peaks, 195.1625e12)) #Sweep 2 (R9)
-second_peak = np.where(diffs == diffs.min())[0][0]
+# fig3, ax3 = plt.subplots()
+# ax3.set_title("HCN peaks")
+# ax3.set_xlabel("Frequency (Hz)")
+# ax3.set_ylabel("Normalized intensity")
+# ax3.plot(x_frequencies, HCN_calibration_normalized)
+# ax3.plot(x_frequencies[HCN_peaks],HCN_calibration_normalized[HCN_peaks],'o')
+# ax3.plot(x_HCN_peaks.iloc[[first_peak,second_peak]], HCN_peak_values.iloc[[first_peak, second_peak]], 'o')
+# #Count the number of FSRs in order to measure... need a file with the calibration?
 #%%
-fig3, ax3 = plt.subplots()
-ax3.set_title("HCN peaks")
-ax3.set_xlabel("Frequency (Hz)")
-ax3.set_ylabel("Normalized intensity")
-ax3.plot(x_frequencies, HCN_calibration_normalized)
-ax3.plot(x_frequencies[HCN_peaks],HCN_calibration_normalized[HCN_peaks],'o')
-ax3.plot(x_HCN_peaks.iloc[[first_peak,second_peak]], HCN_peak_values.iloc[[first_peak, second_peak]], 'o')
-#Count the number of FSRs in order to measure... need a file with the calibration?
+# window = 1000
+# HCN_pd_peaks = HCN_calibration_normalized.index[HCN_peaks]
+# first_peak_pd = HCN_pd_peaks[first_peak]
+# second_peak_pd = HCN_pd_peaks[second_peak]
+# cavity_calibration = cavity_calibration.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
+# HCN_calibration_normalized = HCN_calibration_normalized.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
+# x_frequencies = x_frequencies.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
 #%%
-window = 1000
-HCN_pd_peaks = HCN_calibration_normalized.index[HCN_peaks]
-first_peak_pd = HCN_pd_peaks[first_peak]
-second_peak_pd = HCN_pd_peaks[second_peak]
-cavity_calibration = cavity_calibration.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
-HCN_calibration_normalized = HCN_calibration_normalized.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
-x_frequencies = x_frequencies.iloc[HCN_peaks[first_peak - 1]:HCN_peaks[second_peak + 1 ]]
-#%%
-cavity_calibration_normalized = normalize(cavity_calibration)
-cavity_peaks = find_peaks(cavity_calibration_normalized, prominence = 0.5)[0]
-cavity_peaks_pd = cavity_calibration_normalized.index[cavity_peaks]
-x_cavity_peaks = x_frequencies[cavity_peaks_pd]
-#%%
-fig4, ax4 = plt.subplots(3,1, sharex = 'col')
-ax4[0].set_title("HCN calibration")
-ax4[1].set_title("Cavity resonances")
-ax4[1].plot(x_frequencies, cavity_calibration_normalized, "o-", markersize = 1)
-ax4[1].plot(x_frequencies.iloc[cavity_peaks], cavity_calibration_normalized.iloc[cavity_peaks],'o', markersize = 1)
-ax4[0].plot(x_frequencies,HCN_calibration_normalized, "o-", markersize = 1)
+# cavity_calibration_normalized = normalize(cavity_calibration)
+# cavity_peaks = find_peaks(cavity_calibration_normalized, prominence = 0.5)[0]
+# cavity_peaks_pd = cavity_calibration_normalized.index[cavity_peaks]
+# x_cavity_peaks = x_frequencies[cavity_peaks_pd]
+# #%%
+# fig4, ax4 = plt.subplots(3,1, sharex = 'col')
+# ax4[0].set_title("HCN calibration")
+# ax4[1].set_title("Cavity resonances")
+# ax4[1].plot(x_frequencies, cavity_calibration_normalized, "o-", markersize = 1)
+# ax4[1].plot(x_frequencies.iloc[cavity_peaks], cavity_calibration_normalized.iloc[cavity_peaks],'o', markersize = 1)
+# ax4[0].plot(x_frequencies,HCN_calibration_normalized, "o-", markersize = 1)
 #%%
 #Finding initial resonance
-diffs_init = abs(np.subtract(cavity_peaks_pd,first_peak_pd))
-index_init = np.where(diffs_init == diffs_init.min())[0][0]
-initial_resonance_pd = cavity_peaks_pd[index_init]
+# diffs_init = abs(np.subtract(cavity_peaks_pd,first_peak_pd))
+# index_init = np.where(diffs_init == diffs_init.min())[0][0]
+# initial_resonance_pd = cavity_peaks_pd[index_init]
 
-#This assumes knowledge of the second peak. Now want to determine that without.
-diffs_final = abs(np.subtract(cavity_peaks_pd,second_peak_pd))
-index_final = np.where(diffs_final == diffs_final.min())[0][0]
-final_resonance_pd = cavity_peaks_pd[index_final]
-ax4[1].plot(x_frequencies[initial_resonance_pd],cavity_calibration_normalized[initial_resonance_pd],'o')
-ax4[1].plot(x_frequencies[final_resonance_pd], cavity_calibration_normalized[final_resonance_pd],'o')
+# #This assumes knowledge of the second peak. Now want to determine that without.
+# diffs_final = abs(np.subtract(cavity_peaks_pd,second_peak_pd))
+# index_final = np.where(diffs_final == diffs_final.min())[0][0]
+# final_resonance_pd = cavity_peaks_pd[index_final]
+# ax4[1].plot(x_frequencies[initial_resonance_pd],cavity_calibration_normalized[initial_resonance_pd],'o')
+# ax4[1].plot(x_frequencies[final_resonance_pd], cavity_calibration_normalized[final_resonance_pd],'o')
 #%% Calculate frequency between peaks
-num_of_FSRs = index_final - index_init - 1 #The data is imported from high to low frequency. So the final resonance, even though it is lower in frequency, does come later than the initial one.
-peaks = cavity_peaks_pd[index_init:index_final] #Since we work in wavelength, the leftmost resonance on the graph is actually the final one (same comment as above).
-n=0
-FSRs = []
-while n < len(peaks) - 1:
-    FSR = x_cavity_peaks[peaks[n]] - x_cavity_peaks[peaks[n+1]]
-    FSRs.append(FSR)
-    n+=1
-counted_FSRs = len(FSRs)
-if counted_FSRs != num_of_FSRs:
-    print("Something went wrong with the counting of FSRs.")
-frequ_between_peaks = np.sum(FSRs)
-actual_frequ_between_peaks = x_HCN_peaks[first_peak_pd] - x_HCN_peaks[second_peak_pd]
+# num_of_FSRs = index_final - index_init - 1 #The data is imported from high to low frequency. So the final resonance, even though it is lower in frequency, does come later than the initial one.
+# peaks = cavity_peaks_pd[index_init:index_final] #Since we work in wavelength, the leftmost resonance on the graph is actually the final one (same comment as above).
+# n=0
+# FSRs = []
+# while n < len(peaks) - 1:
+#     FSR = x_cavity_peaks[peaks[n]] - x_cavity_peaks[peaks[n+1]]
+#     FSRs.append(FSR)
+#     n+=1
+# counted_FSRs = len(FSRs)
+# if counted_FSRs != num_of_FSRs:
+#     print("Something went wrong with the counting of FSRs.")
+# frequ_between_peaks = np.sum(FSRs)
+# actual_frequ_between_peaks = x_HCN_peaks[first_peak_pd] - x_HCN_peaks[second_peak_pd]
 #FSR is about 118 MHz...
 #%%
 #Plot dispersion curve
-dispersion_x = x_cavity_peaks[peaks]
-dispersion_x = dispersion_x[0:len(dispersion_x)-1]
-ax4[2].set_title("C-Band dispersion curve")
-ax4[2].plot(dispersion_x, FSRs,'o-', markersize = 1)
+# dispersion_x = x_cavity_peaks[peaks]
+# dispersion_x = dispersion_x[0:len(dispersion_x)-1]
+# ax4[2].set_title("C-Band dispersion curve")
+# ax4[2].plot(dispersion_x, FSRs,'o-', markersize = 1)
 #%% Higher frequency sweep
 sweep1_cavity = normalize(sweep1_cavity[9000000:12055000])
 sweep1_HCN = normalize(sweep1_HCN[9000000:12055000])
@@ -131,8 +132,8 @@ fig00, ax00 = plt.subplots()
 ax00.plot(range(len(sweep2_cavity)),sweep2_cavity)
 ax00.plot(range(len(sweep2_HCN)),sweep2_HCN)
 #%% Finding peaks - solely for the purpose of counting
-first_peak_frequ = x_HCN_peaks[first_peak_pd]
-second_peak_frequ = x_HCN_peaks[second_peak_pd]
+#first_peak_frequ = x_HCN_peaks[first_peak_pd]
+#second_peak_frequ = x_HCN_peaks[second_peak_pd]
 def sweepLength(HCN_peak, sweep_cavity, direction = "high-low", scrap_resonances = 0): #This function seems to repeat itself a little bit.
     full_sweep_cavity_peaks = find_peaks(sweep_cavity, prominence = 0.5, distance = 100)[0]
     diffs_sweep = abs(np.subtract(full_sweep_cavity_peaks,HCN_peak)) #Need to find index of FSR peak closed to HCN line.
@@ -140,52 +141,61 @@ def sweepLength(HCN_peak, sweep_cavity, direction = "high-low", scrap_resonances
     indexinit_sweep = full_sweep_cavity_peaks[init_peak]
     if direction == "high-low":
         ITLA_FSRs = len(full_sweep_cavity_peaks[init_peak:]) - scrap_resonances #Might need a minus one here, TBD.
-        sweep_peaks = peaks[:ITLA_FSRs]
+        #sweep_peaks = peaks[:ITLA_FSRs]
         sweep_cavity_peaks = full_sweep_cavity_peaks[init_peak:]
     elif direction == "low-high":
         ITLA_FSRs = len(full_sweep_cavity_peaks[:init_peak]) - scrap_resonances
-        sweep_peaks = peaks[len(peaks) - ITLA_FSRs:]
+        #sweep_peaks = peaks[len(peaks) - ITLA_FSRs:]
         sweep_cavity_peaks = full_sweep_cavity_peaks[:init_peak]
-    x_sweep_peaks = x_cavity_peaks[sweep_peaks]
-    sweep_length = x_sweep_peaks.iloc[0] - x_sweep_peaks.iloc[-1]
+    #x_sweep_peaks = x_cavity_peaks[sweep_peaks]
+    #sweep_length = x_sweep_peaks.iloc[0] - x_sweep_peaks.iloc[-1]
+    sweep_length = len(sweep_cavity_peaks)
     if sweep_length < 0:
         print("Error in sweep direction.")
-    return HCN_peak, indexinit_sweep, init_peak, sweep_cavity_peaks, x_sweep_peaks, sweep_length, ITLA_FSRs, sweep_peaks, full_sweep_cavity_peaks  
+    return HCN_peak, indexinit_sweep, init_peak, sweep_cavity_peaks, sweep_length, ITLA_FSRs, full_sweep_cavity_peaks  
 HCN_peak_1 = find_peaks(sweep1_HCN, prominence = 0.5, plateau_size = 1000, distance = 100000)[0]
 #ax0.plot(HCN_peak_1, sweep1_HCN.iloc[HCN_peak_1],'o', markersize = 1.5)
-ITLA_first_peak, indexinit_sweep1, init_peak, sweep1_cavity_peaks, x_sweep1_peaks, sweep1_length, ITLA_FSRs1, sweep_peaks1, full_sweep_cavity_peaks_1 = sweepLength(HCN_peak_1, sweep1_cavity, direction = "high-low")
+ITLA_first_peak, indexinit_sweep1, init_peak, sweep1_cavity_peaks, sweep1_length, ITLA_FSRs1, full_sweep_cavity_peaks_1 = sweepLength(HCN_peak_1, sweep1_cavity, direction = "high-low")
 HCN_peak_2 = find_peaks(sweep2_HCN, prominence = 0.5, plateau_size = 1000, distance = 100000)[0]
 #ax00.plot(HCN_peak_2, sweep2_HCN.iloc[HCN_peak_2],'o', markersize = 1.5)
-ITLA_second_peak, indexinit_sweep2, final_peak, sweep2_cavity_peaks, x_sweep2_peaks, sweep2_length, ITLA_FSRs2, sweep_peaks2, full_sweep_cavity_peaks_2 = sweepLength(HCN_peak_2, sweep2_cavity, direction = "low-high")
-#%% Finding EOM peaks for sweep 2
-#def find_EOM(sweep):
-    
+ITLA_second_peak, indexinit_sweep2, final_peak, sweep2_cavity_peaks, sweep2_length, ITLA_FSRs2, full_sweep_cavity_peaks_2 = sweepLength(HCN_peak_2, sweep2_cavity, direction = "low-high")
+#%% Finding EOM peaks for sweeps 1 & 2
+def find_EOM1(sweep):
+    EOM_peaks = find_peaks(sweep, prominence = [0.05,0.5], plateau_size = 1, width = 100, distance = 500)[0] #Try to refine positions with plateau size.
+    return EOM_peaks
+def find_EOM2(sweep):
+    EOM_peaks = find_peaks(sweep, prominence = [0.05,0.5], plateau_size = 1, width = 100, distance = 500)[0]
+    return EOM_peaks
+sweep1_EOM_ix = find_EOM1(sweep1_cavity) 
+sweep2_EOM_ix = find_EOM2(sweep2_cavity)
+#%%
+
 #%% Fitting the HCN peaks to a Lorentzian
-fitting_range = int(3e5)
-from scipy.constants import pi
-def lorentzian(x, p):
-    return p['amplitude']*(0.5*p["gamma"])**2/((x - p["center"])**2 + (0.5*p["gamma"])**2) + p["offset"]
-def fcn2minfit(params,x,y):
-    return lorentzian(x, params) - y
-HCN_data = sweep1_HCN
-HCN_peak = HCN_peak_1
-HCN_fit = HCN_data.iloc[0:fitting_range]
-#print(HCN_fit)
-HCN_fit_y = np.array(HCN_fit) #This has a pandas index
-#print(HCN_fit_y, len(HCN_fit_y))
-HCN_fit_x = x1[0:fitting_range]
-#print(HCN_fit_x, len(HCN_fit_x))
-#Try using lmfit
-params = Parameters()
-params.add('amplitude', value = 1)
-params.add('gamma', value = 1)
-params.add('center', value = HCN_peak[0])
-params.add('offset', value = 0.1)
-minner = Minimizer(fcn2minfit,params, fcn_args = (HCN_fit_x,HCN_fit_y))
-result1 = minner.minimize(method = "leastsq")
-report_fit(result1)
-report1 = fit_report(result1)
-fitted_y_HCN = lorentzian(HCN_fit_x,result1.params)
+# fitting_range = int(3e5)
+# from scipy.constants import pi
+# def lorentzian(x, p):
+#     return p['amplitude']*(0.5*p["gamma"])**2/((x - p["center"])**2 + (0.5*p["gamma"])**2) + p["offset"]
+# def fcn2minfit(params,x,y):
+#     return lorentzian(x, params) - y
+# HCN_data = sweep1_HCN
+# HCN_peak = HCN_peak_1
+# HCN_fit = HCN_data.iloc[0:fitting_range]
+# #print(HCN_fit)
+# HCN_fit_y = np.array(HCN_fit) #This has a pandas index
+# #print(HCN_fit_y, len(HCN_fit_y))
+# HCN_fit_x = x1[0:fitting_range]
+# #print(HCN_fit_x, len(HCN_fit_x))
+# #Try using lmfit
+# params = Parameters()
+# params.add('amplitude', value = 1)
+# params.add('gamma', value = 1)
+# params.add('center', value = HCN_peak[0])
+# params.add('offset', value = 0.1)
+# minner = Minimizer(fcn2minfit,params, fcn_args = (HCN_fit_x,HCN_fit_y))
+# result1 = minner.minimize(method = "leastsq")
+# report_fit(result1)
+# report1 = fit_report(result1)
+# fitted_y_HCN = lorentzian(HCN_fit_x,result1.params)
 """------------------------------------------------"""
 # def fit_HCN(HCN_data, HCN_peak, fitting_range): #Number of sample points, in total, to encase the peak
 #     HCN_fit = HCN_data.iloc[int(HCN_peak - fitting_range/2): int(HCN_peak + fitting_range/2)]
@@ -237,27 +247,29 @@ ax6[1].plot(FSRs_ix_x2, FSRs_ix2,'o')
 #frequ_between_peaks = np.sum(FSRs)
 #actual_frequ_between_peaks = x_HCN_peaks[first_peak_pd] - x_HCN_peaks[second_peak_pd]
 #%% Plotting the ITLA sweeps
-ax4[1].plot(x_sweep1_peaks, cavity_calibration_normalized[x_sweep1_peaks.index],"o", markersize = 2.5)
-ax4[1].plot(x_sweep2_peaks, cavity_calibration_normalized[x_sweep2_peaks.index],'o', markersize = 1)
+#ax4[1].plot(x_sweep1_peaks, cavity_calibration_normalized[x_sweep1_peaks.index],"o", markersize = 2.5)
+#ax4[1].plot(x_sweep2_peaks, cavity_calibration_normalized[x_sweep2_peaks.index],'o', markersize = 1)
 fig1, ax1 = plt.subplots(2,1, sharex = True)
-ax1[0].plot(HCN_fit_x, fitted_y_HCN) #Obtained from fit block
+#ax1[0].plot(HCN_fit_x, fitted_y_HCN) #Obtained from fit block
 #ax1[0].plot(range(int(int(result1.params['center']) - result1.params['gamma']/2),int(int(result1.params['center']) + result1.params['gamma']/2)), [result1.params['amplitude']/2 + result1.params['offset']]*int(result1.params['gamma']))
 ax1[0].set_title("Sweep 1")
-ax1[1].plot(x1, sweep1_cavity)
+ax1[1].plot(x1, sweep1_cavity,"-o", markersize = 0.5)
 ax1[0].plot(x1, sweep1_HCN)
 ax1[0].plot(ITLA_first_peak, sweep1_HCN.iloc[ITLA_first_peak],'o')
-ax1[1].plot(full_sweep_cavity_peaks_1, sweep1_cavity.iloc[full_sweep_cavity_peaks_1],'o', markersize = 1)
 ax1[1].plot(sweep1_cavity_peaks, sweep1_cavity.iloc[sweep1_cavity_peaks],'o', markersize = 3)
+ax1[1].plot(full_sweep_cavity_peaks_1, sweep1_cavity.iloc[full_sweep_cavity_peaks_1],'o', markersize = 1)
+ax1[1].plot(sweep1_EOM_ix, sweep1_cavity.iloc[sweep1_EOM_ix],'o', markersize = 1)
 ax1[1].plot(indexinit_sweep1,sweep1_cavity.iloc[indexinit_sweep1],'o')
 #ax1[1].plot(sweep1_cavity_peaks[init_peak:], sweep1_cavity.iloc[sweep1_cavity_peaks[init_peak:]], 'o', markersize = 1) #Unecessary line, causes some problems.
 fig2, ax2 = plt.subplots(2,1, sharex = True)
 ax2[0].set_title("Sweep 2")
-ax2[1].plot(x2, sweep2_cavity)
+ax2[1].plot(x2, sweep2_cavity,"-o", markersize = 0.5)
 ax2[0].plot(x2, sweep2_HCN)
-ax2[0].plot(ITLA_second_peak, sweep2_HCN.iloc[ITLA_second_peak],'o')
 ax2[1].plot(sweep2_cavity_peaks, sweep2_cavity.iloc[sweep2_cavity_peaks],'o', markersize = 3)
 ax2[1].plot(full_sweep_cavity_peaks_2, sweep2_cavity.iloc[full_sweep_cavity_peaks_2],'o', markersize = 1)
-#ax2[1].plot(indexinit_sweep2,sweep2_cavity.iloc[indexinit_sweep2],'o')
+ax2[0].plot(ITLA_second_peak, sweep2_HCN.iloc[ITLA_second_peak],'o')
+ax2[1].plot(sweep2_EOM_ix, sweep2_cavity.iloc[sweep2_EOM_ix],'o', markersize = 2)
+ax2[1].plot(indexinit_sweep2,sweep2_cavity.iloc[indexinit_sweep2],'o')
 #ax2[1].plot(sweep2_cavity_peaks[:final_peak], sweep2_cavity.iloc[sweep2_cavity_peaks[:final_peak]], 'o', markersize = 1)
 #%%
 #Fitting the dispersion curve of laser
