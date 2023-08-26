@@ -271,141 +271,188 @@ ax2[0].plot(ITLA_second_peak, sweep2_HCN.iloc[ITLA_second_peak],'o')
 ax2[1].plot(sweep2_EOM_ix, sweep2_cavity.iloc[sweep2_EOM_ix],'o', markersize = 2)
 ax2[1].plot(indexinit_sweep2,sweep2_cavity.iloc[indexinit_sweep2],'o')
 #ax2[1].plot(sweep2_cavity_peaks[:final_peak], sweep2_cavity.iloc[sweep2_cavity_peaks[:final_peak]], 'o', markersize = 1)
+#%% Dispersion function
+def get_sweep_dispersion(sweep_cavity_indices, sweep_eom_indices, sweep_cavity, ax):
+    FSRs = []
+    stopping_index = sweep_cavity_indices[-1]
+    num_of_FSRs = len(sweep_cavity_indices) - 1
+    n = 0
+    offset = 0
+    while n < num_of_FSRs:
+        starting_index = sweep_cavity_indices[n]
+        nextindex = sweep_cavity_indices[n+1]
+        FSRs.append(calculate_FSR(starting_index,nextindex,sweep_cavity_indices, sweep_eom_indices, sweep_cavity, ax))
+        n+=1
+    return(FSRs)
+#%% FSR length calculation based on EOM peaks
+def calculate_FSR(startindex, nextindex,sweep_cavity_indices, sweep_eom_indices,sweep_cavity,ax):
+    m = 11
+    f_mod1 = 1.3460e9 #In Hz. GHz range
+    if not np.any(sweep_cavity_indices == startindex):
+        print("The starting index is not the index of a peak.")
+    diffs = np.absolute(np.subtract(startindex, sweep_eom_indices))
+    eom_1 = np.where(diffs == diffs.min())[0][0]
+    while sweep_eom_indices[eom_1] <= startindex: #Make sure that you start with the first EOM peak
+      eom_1 = eom_1 + 1
+    while sweep_eom_indices[eom_1 + 1] >= nextindex:#Make sure that you do not pass into the next FSR.
+        eom_1 = eom_1 - 1
+      #print("Initial EOM peak found on negative side.")
+    t_1 = sweep_eom_indices[eom_1]
+    ax[1].plot(t_1, sweep_cavity.iloc[sweep_eom_indices[eom_1]], 'ro', markersize = 3)
+    t_2 = sweep_eom_indices[eom_1 + 1]
+    ax[1].plot(t_2, sweep_cavity.iloc[sweep_eom_indices[eom_1 + 1]], 'bo', markersize = 3)
+    t_gap = t_2-t_1
+    t_mod1 = t_1 - startindex
+    FSR = f_mod1*(2+t_gap/t_mod1)/(2*m+1+m*t_gap/t_mod1)
+    #here, m = 23
+    return FSR
+#%% Testing FSR calculation strategy
+FSRs1 = get_sweep_dispersion(sweep1_cavity_peaks,sweep1_EOM_ix, sweep1_cavity, ax1)
+FSRs2 = get_sweep_dispersion(sweep2_cavity_peaks,sweep2_EOM_ix,sweep2_cavity, ax2)
 #%%
-#Fitting the dispersion curve of laser
-fig5, ax5 = plt.subplots(3,1, sharex = "col")
-#This is the accurate position of the laser.
-ITLA_dispersion_y = np.concatenate((FSRs[0:len(x_sweep1_peaks)], FSRs[len(FSRs) - len(x_sweep2_peaks):]))
-ITLA_dispersion_x = np.concatenate((x_sweep1_peaks, x_sweep2_peaks))
-#This is a separate version of the dataset to be moved around.
-sweep2_dispersion_y = FSRs[len(FSRs) - len(x_sweep2_peaks):]
-sweep2_dispersion_x = x_sweep2_peaks
-#Try using lmfit
-def poly2(x,p):
-    return p['a']*(x)**2 + p['b']*x + p['c']
-def fcn2min(params,x,y):
-    a = params['a']
-    b = params['b']
-    c = params['c']
-    return a*x**2 + b*x + c - y
-def f(y,x,p):
-    return p['a']*(x)**2 + p['b']*x + p['c'] - y
-params = Parameters()
-params.add('a', value = 1)
-params.add('b', value = 1)
-params.add('c', value = 1)
-minner = Minimizer(fcn2min,params, fcn_args = (ITLA_dispersion_x,ITLA_dispersion_y))
-result = minner.minimize()
-report_fit(result)
-report = fit_report(result)
-fitted_y = poly2(dispersion_x,result.params) 
-residual_y = np.abs(poly2(ITLA_dispersion_x, result.params) - ITLA_dispersion_y)
-ax5[0].set_title("Dispersion curve from calibration, only range of ITLA")
-ax5[0].set_ylabel("FSR (Hz)")
-#ax5[0].set_xlabel("Frequency (Hz)")
-fig5.text(0.5, 0.04, 'Frequency (Hz)', ha='center')
-fig5.text(0.04, 0.5, 'FSR (Hz)', va='center', rotation='vertical')
-ax5[1].set_title("Dispersion curve from calibration")
-ax5[0].plot(dispersion_x, fitted_y)
-ax5[0].plot(ITLA_dispersion_x, ITLA_dispersion_y, 'o', markersize = 2)
-ax5[1].plot(dispersion_x, FSRs,'o', markersize = 1)
-ax5[2].plot(ITLA_dispersion_x, residual_y, 'o', markersize = 2)
-ax5[2].set_title("Frequency difference between fit and data")
-ax5[2].set_ylabel("Residual (Hz)")
-x = np.flip(np.arange(dispersion_x.iloc[0]- 1e15,dispersion_x.iloc[0], 1e13))
-x = dispersion_x
-#%% Find the resonance peaks closest to bandwidth
+#Plot dispersion curves
+def disp_plot(FSRs):
+    dispersion_x = range(len(FSRs)) #FSR number
+    fig, ax4 = plt.subplots()
+    ax4.set_title("C-Band dispersion curve")
+    ax4.plot(dispersion_x, FSRs,'o-', markersize = 1)
+disp_plot(FSRs1)
+disp_plot(FSRs2)
+# #%%
+# #Fitting the dispersion curve of laser
+# fig5, ax5 = plt.subplots(3,1, sharex = "col")
+# #This is the accurate position of the laser.
+# ITLA_dispersion_y = np.concatenate((FSRs[0:len(x_sweep1_peaks)], FSRs[len(FSRs) - len(x_sweep2_peaks):]))
+# ITLA_dispersion_x = np.concatenate((x_sweep1_peaks, x_sweep2_peaks))
+# #This is a separate version of the dataset to be moved around.
+# sweep2_dispersion_y = FSRs[len(FSRs) - len(x_sweep2_peaks):]
+# sweep2_dispersion_x = x_sweep2_peaks
+# #Try using lmfit
+# def poly2(x,p):
+#     return p['a']*(x)**2 + p['b']*x + p['c']
+# def fcn2min(params,x,y):
+#     a = params['a']
+#     b = params['b']
+#     c = params['c']
+#     return a*x**2 + b*x + c - y
+# def f(y,x,p):
+#     return p['a']*(x)**2 + p['b']*x + p['c'] - y
+# params = Parameters()
+# params.add('a', value = 1)
+# params.add('b', value = 1)
+# params.add('c', value = 1)
+# minner = Minimizer(fcn2min,params, fcn_args = (ITLA_dispersion_x,ITLA_dispersion_y))
+# result = minner.minimize()
+# report_fit(result)
+# report = fit_report(result)
+# fitted_y = poly2(dispersion_x,result.params) 
+# residual_y = np.abs(poly2(ITLA_dispersion_x, result.params) - ITLA_dispersion_y)
+# ax5[0].set_title("Dispersion curve from calibration, only range of ITLA")
+# ax5[0].set_ylabel("FSR (Hz)")
+# #ax5[0].set_xlabel("Frequency (Hz)")
+# fig5.text(0.5, 0.04, 'Frequency (Hz)', ha='center')
+# fig5.text(0.04, 0.5, 'FSR (Hz)', va='center', rotation='vertical')
+# ax5[1].set_title("Dispersion curve from calibration")
+# ax5[0].plot(dispersion_x, fitted_y)
+# ax5[0].plot(ITLA_dispersion_x, ITLA_dispersion_y, 'o', markersize = 2)
+# ax5[1].plot(dispersion_x, FSRs,'o', markersize = 1)
+# ax5[2].plot(ITLA_dispersion_x, residual_y, 'o', markersize = 2)
+# ax5[2].set_title("Frequency difference between fit and data")
+# ax5[2].set_ylabel("Residual (Hz)")
+# x = np.flip(np.arange(dispersion_x.iloc[0]- 1e15,dispersion_x.iloc[0], 1e13))
+# x = dispersion_x
+# #%% Find the resonance peaks closest to bandwidth
 
-#%% Square of residuals analysis. 
-import time
-def checkFit(x,y, plot):
-    fit_x = np.concatenate((x_sweep1_peaks, x))
-    fit_y = np.concatenate((FSRs[0:len(x_sweep1_peaks)], y))
-    params = Parameters()
-    params.add('a', value = 1)
-    params.add('b', value = 1)
-    params.add('c', value = 1)
-    minner = Minimizer(fcn2min,params, fcn_args = (fit_x,fit_y))
-    result = minner.minimize()
-    report = fit_report(result)
-    fitted_y = poly2(fit_x,result.params)
-    residuals= np.abs(fitted_y - fit_y)**2
-    sum_residuals = np.sum(residuals)
-    if plot:
-        fig8, ax8 = plt.subplots()
-        ax8.plot(fit_x, fit_y, 'o', markersize = 1)
-        ax8.set_xlim(192600000000000, 192740000000000)
-        ax8.set_ylim(117690250,117690650)
-        ax8.set_title("Optimisation of dispersion curve x-position")
-        ax8.set_xlabel("Frequency")
-        ax8.set_ylabel("FSR length")
-        ax8.plot(dispersion_x, poly2(dispersion_x, result.params))
-        fig8.savefig("./FitTest/" + str(int(time.time()*1000)) + ".png")
-        plt.close(fig8)
-    return sum_residuals
+# #%% Square of residuals analysis. 
+# import time
+# def checkFit(x,y, plot):
+#     fit_x = np.concatenate((x_sweep1_peaks, x))
+#     fit_y = np.concatenate((FSRs[0:len(x_sweep1_peaks)], y))
+#     params = Parameters()
+#     params.add('a', value = 1)
+#     params.add('b', value = 1)
+#     params.add('c', value = 1)
+#     minner = Minimizer(fcn2min,params, fcn_args = (fit_x,fit_y))
+#     result = minner.minimize()
+#     report = fit_report(result)
+#     fitted_y = poly2(fit_x,result.params)
+#     residuals= np.abs(fitted_y - fit_y)**2
+#     sum_residuals = np.sum(residuals)
+#     if plot:
+#         fig8, ax8 = plt.subplots()
+#         ax8.plot(fit_x, fit_y, 'o', markersize = 1)
+#         ax8.set_xlim(192600000000000, 192740000000000)
+#         ax8.set_ylim(117690250,117690650)
+#         ax8.set_title("Optimisation of dispersion curve x-position")
+#         ax8.set_xlabel("Frequency")
+#         ax8.set_ylabel("FSR length")
+#         ax8.plot(dispersion_x, poly2(dispersion_x, result.params))
+#         fig8.savefig("./FitTest/" + str(int(time.time()*1000)) + ".png")
+#         plt.close(fig8)
+#     return sum_residuals
 
-index = x_cavity_peaks.index
-FSR_range = int(num_of_FSRs) #Optimal point should be right in the middle
-n = 0
-xs = []
-ys = []
-sweep2_no_of_peaks = len(x_sweep2_peaks)
-#sweep2_init_peak at 1.92633e+14 Hz
-FSR_overlap = 20
-sweep2_init_FSR_ix = len(FSRs) - sweep2_no_of_peaks - 1
-sweep2_FSRs = FSRs[sweep2_init_FSR_ix:]
-sweep2_distances_from_top = [sweep2_FSRs[0]] #Need to forego the HCN finding for sweep 2.
+# index = x_cavity_peaks.index
+# FSR_range = int(num_of_FSRs) #Optimal point should be right in the middle
+# n = 0
+# xs = []
+# ys = []
+# sweep2_no_of_peaks = len(x_sweep2_peaks)
+# #sweep2_init_peak at 1.92633e+14 Hz
+# FSR_overlap = 20
+# sweep2_init_FSR_ix = len(FSRs) - sweep2_no_of_peaks - 1
+# sweep2_FSRs = FSRs[sweep2_init_FSR_ix:]
+# sweep2_distances_from_top = [sweep2_FSRs[0]] #Need to forego the HCN finding for sweep 2.
 
-start = len(x_sweep1_peaks) - FSR_overlap
-FSR_range = 500 
-m = 0
-initial_peak_sweep1 = x_sweep1_peaks.index[0] #Sweep_peaks1 and sweep_peaks2 have pandas index, as opposed to sweep1_cavity_peaks etc... Remember they sweep from high to low frequ.
-test = x_cavity_peaks[initial_peak_sweep1]
-ix = np.where(x_cavity_peaks == test)[0][0]
-cavity_init_peak_index = len(x_cavity_peaks[:initial_peak_sweep1])
-#This block is optional. It assumes you know the position of the HCN peak.
-while m < len(sweep2_FSRs) - 1:
-    sweep2_distances_from_top.append(sweep2_distances_from_top[m] + sweep2_FSRs [m+1])
-    m += 1
-sweeps = []
+# start = len(x_sweep1_peaks) - FSR_overlap
+# FSR_range = 500 
+# m = 0
+# initial_peak_sweep1 = x_sweep1_peaks.index[0] #Sweep_peaks1 and sweep_peaks2 have pandas index, as opposed to sweep1_cavity_peaks etc... Remember they sweep from high to low frequ.
+# test = x_cavity_peaks[initial_peak_sweep1]
+# ix = np.where(x_cavity_peaks == test)[0][0]
+# cavity_init_peak_index = len(x_cavity_peaks[:initial_peak_sweep1])
+# #This block is optional. It assumes you know the position of the HCN peak.
+# while m < len(sweep2_FSRs) - 1:
+#     sweep2_distances_from_top.append(sweep2_distances_from_top[m] + sweep2_FSRs [m+1])
+#     m += 1
+# sweeps = []
 
-while n < FSR_range:
-    plot = False
-    if n == 0:
-        x = x_cavity_peaks[initial_peak_sweep1] #This sets the top of the fitting curve. Minus a few indices for wiggle room.
-    else: 
-        x = x_cavity_peaks[x_cavity_peaks.index[ix + n]] #Plus/minus n to go in opposite direction. Step downwards on dispersion graph with plus.
+# while n < FSR_range:
+#     plot = False
+#     if n == 0:
+#         x = x_cavity_peaks[initial_peak_sweep1] #This sets the top of the fitting curve. Minus a few indices for wiggle room.
+#     else: 
+#         x = x_cavity_peaks[x_cavity_peaks.index[ix + n]] #Plus/minus n to go in opposite direction. Step downwards on dispersion graph with plus.
 
-    chng_x_sweep2_peaks = np.subtract(x, sweep2_distances_from_top) #Make sure that you do not require that.
-    if n % 10 == 0:
-        plot = False
-    residual = checkFit(chng_x_sweep2_peaks,sweep2_FSRs, plot)
-    sweeps.append(chng_x_sweep2_peaks)
-    xs.append(x)
-    ys.append(residual)
-    n+=1
-    #y = checkFit() #Finish this tomorrow.
-fig7, ax7 = plt.subplots()
-ax7.plot(xs,ys,"o", markersize = 1)
-ax7.set_title("Residuals of fit based on sweep2 position")
-ax7.set_ylabel("Sum of residuals")
-ax7.set_xlabel("Position of start of sweep 2 (Hz)")
-#%%
-#Make a function that checks if the residuals function has a minimum.
-#If residuals not good enough, maybe use chi squared?
-#%% Determine minimum fit error spot
-#Each FSR should have its index
-ys = np.array(ys)
-stitch_frequ_index = np.where(ys == ys.min())[0][0]
-stitch_frequ = xs[stitch_frequ_index]
-print("Proper start frequ: "  + str(x_sweep2_peaks.iloc[0]))
-print("Fitted start frequ: " + str(stitch_frequ))
-print("Absolute error: " + str(np.abs(x_sweep2_peaks.iloc[0] - stitch_frequ)))
-print("Approx error in FSRs: ", np.abs(x_sweep2_peaks.iloc[0] - stitch_frequ)/117690408.40625)
-print("Error in FSRs according to code: ", np.abs(stitch_frequ_index - sweep2_init_FSR_ix)) #Need to fix this part. Might be an overestimation.
-ax7.plot(xs[stitch_frequ_index], ys[stitch_frequ_index],'o', label = "Fitted start of sweep 2")
-ax7.plot(xs[sweep2_init_FSR_ix], ys[sweep2_init_FSR_ix],'o', label = "Known start of sweep 2")
-ax7.legend()
-#print("Proper start frequ: ", xs[sweep2_init_FSR_ix - len(x_sweep1_peaks)]) #Not sure what this was about.
-#Check if that is actually the proper start FSR.
-#Using the squares actually reduces the error to zero.
+#     chng_x_sweep2_peaks = np.subtract(x, sweep2_distances_from_top) #Make sure that you do not require that.
+#     if n % 10 == 0:
+#         plot = False
+#     residual = checkFit(chng_x_sweep2_peaks,sweep2_FSRs, plot)
+#     sweeps.append(chng_x_sweep2_peaks)
+#     xs.append(x)
+#     ys.append(residual)
+#     n+=1
+#     #y = checkFit() #Finish this tomorrow.
+# fig7, ax7 = plt.subplots()
+# ax7.plot(xs,ys,"o", markersize = 1)
+# ax7.set_title("Residuals of fit based on sweep2 position")
+# ax7.set_ylabel("Sum of residuals")
+# ax7.set_xlabel("Position of start of sweep 2 (Hz)")
+# #%%
+# #Make a function that checks if the residuals function has a minimum.
+# #If residuals not good enough, maybe use chi squared?
+# #%% Determine minimum fit error spot
+# #Each FSR should have its index
+# ys = np.array(ys)
+# stitch_frequ_index = np.where(ys == ys.min())[0][0]
+# stitch_frequ = xs[stitch_frequ_index]
+# print("Proper start frequ: "  + str(x_sweep2_peaks.iloc[0]))
+# print("Fitted start frequ: " + str(stitch_frequ))
+# print("Absolute error: " + str(np.abs(x_sweep2_peaks.iloc[0] - stitch_frequ)))
+# print("Approx error in FSRs: ", np.abs(x_sweep2_peaks.iloc[0] - stitch_frequ)/117690408.40625)
+# print("Error in FSRs according to code: ", np.abs(stitch_frequ_index - sweep2_init_FSR_ix)) #Need to fix this part. Might be an overestimation.
+# ax7.plot(xs[stitch_frequ_index], ys[stitch_frequ_index],'o', label = "Fitted start of sweep 2")
+# ax7.plot(xs[sweep2_init_FSR_ix], ys[sweep2_init_FSR_ix],'o', label = "Known start of sweep 2")
+# ax7.legend()
+# #print("Proper start frequ: ", xs[sweep2_init_FSR_ix - len(x_sweep1_peaks)]) #Not sure what this was about.
+# #Check if that is actually the proper start FSR.
+# #Using the squares actually reduces the error to zero.
