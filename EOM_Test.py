@@ -169,7 +169,7 @@ def find_EOM2(sweep):
 sweep1_EOM_ix = find_EOM1(sweep1_cavity) 
 sweep2_EOM_ix = find_EOM2(sweep2_cavity)
 #%%Fix all peaks using fitting
-fitting_range = int(0.003e6)
+fitting_range = int(0.0015e6)
 from scipy.constants import pi
 def lorentzian(x, p):
     return p['amplitude']*(0.5*p["gamma"])**2/((x - p["center"])**2 + (0.5*p["gamma"])**2) + p["offset"]
@@ -198,9 +198,9 @@ def fit_cavity(cavity_data, cavity_peak, fitting_range): #Number of sample point
     cavity_fit = cavity_data.iloc[int(cavity_peak - fitting_range/2): int(cavity_peak + fitting_range/2)]
     #print(HCN_fit)
     cavity_fit_y = cavity_fit.tolist() #This has a pandas index
-    print(cavity_fit_y, len(cavity_fit_y))
+    #print(cavity_fit_y, len(cavity_fit_y))
     cavity_fit_x = range(int(cavity_peak - fitting_range/2),int(cavity_peak + fitting_range/2))
-    print(cavity_fit_x, len(cavity_fit_x))
+    #print(cavity_fit_x, len(cavity_fit_x))
     #Try using lmfit
     params = Parameters()
     params.add('amplitude', value = 1)
@@ -209,14 +209,39 @@ def fit_cavity(cavity_data, cavity_peak, fitting_range): #Number of sample point
     params.add('offset', value = 0.1)
     minner = Minimizer(fcn2minfit,params, fcn_args = (cavity_fit_x,cavity_fit_y))
     result = minner.minimize()
-    report_fit(result)
+    #report_fit(result)
     report = fit_report(result)
     fitted_y_cavity = lorentzian(cavity_fit_x,result.params)
     variables = (cavity_fit_y, cavity_fit_x)
     return fitted_y_cavity, result.params, variables
-fitted_y_cavity_1, params_1, variables = fit_cavity(sweep1_cavity,sweep1_cavity_peaks[3], fitting_range)
+fitted_y_cavity_1, params_1, variables_1 = fit_cavity(sweep1_cavity,sweep1_cavity_peaks[3], fitting_range)
 sweep1_cavity_peaks[3] = params_1["center"]
+fitting_range_2 = int(0.0003e6)
+#We dont care about the y for now, might add later - assume all is good
 #%% Fit all the peaks
+n = 0
+for peak in sweep1_cavity_peaks:
+    fitted_y_cavity, params, variables = fit_cavity(sweep1_cavity,peak, fitting_range)
+    sweep1_cavity_peaks[n] = params['center']
+    n +=1
+n = 0
+for peak in sweep2_cavity_peaks:
+    fitted_y_cavity, params, variables = fit_cavity(sweep2_cavity,peak, fitting_range)
+    sweep2_cavity_peaks[n] = params['center']
+    n +=1
+#%% EOM Peaks
+fitted_y_cavity_2, params_2, variables_2 = fit_cavity(sweep1_cavity,sweep1_EOM_ix[3], fitting_range)
+sweep1_EOM_ix[3] = params_2["center"]
+n = 0
+for peak in sweep1_EOM_ix:
+    fitted_y_cavity, params, variables = fit_cavity(sweep1_cavity,peak, fitting_range_2)
+    sweep1_EOM_ix[n] = params['center']
+    n +=1 
+n = 0
+for peak in sweep2_EOM_ix:
+    fitted_y_cavity, params, variables = fit_cavity(sweep2_cavity,peak,fitting_range_2)
+    sweep2_EOM_ix[n] = params['center']
+    n +=1 
 #%% Fitting the HCN peaks to a Lorentzian
 # fitting_range = int(3e5)
 # from scipy.constants import pi
@@ -309,7 +334,8 @@ ax1[1].plot(indexinit_sweep1,sweep1_cavity.iloc[indexinit_sweep1],'o')
 ax1[1].set_ylabel("Normalized volts")
 ax1[0].set_ylabel("Normalized volts")
 ax1[1].set_xlabel("Oscilloscope sample number")
-ax1[1].plot(variables[1], fitted_y_cavity_1 , label = "fit") #Obtained from fit block
+ax1[1].plot(variables_1[1], fitted_y_cavity_1 , label = "fit") #Obtained from fit block
+ax1[1].plot(variables_2[1], fitted_y_cavity_2 , label = "fit_EOM") #Obtained from fit block
 #ax1[1].plot(sweep1_cavity_peaks[init_peak:], sweep1_cavity.iloc[sweep1_cavity_peaks[init_peak:]], 'o', markersize = 1) #Unecessary line, causes some problems.
 fig2, ax2 = plt.subplots(2,1, sharex = True)
 ax2[0].set_title("Sweep 2")
