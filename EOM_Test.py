@@ -169,7 +169,54 @@ def find_EOM2(sweep):
 sweep1_EOM_ix = find_EOM1(sweep1_cavity) 
 sweep2_EOM_ix = find_EOM2(sweep2_cavity)
 #%%Fix all peaks using fitting
-
+fitting_range = int(0.003e6)
+from scipy.constants import pi
+def lorentzian(x, p):
+    return p['amplitude']*(0.5*p["gamma"])**2/((x - p["center"])**2 + (0.5*p["gamma"])**2) + p["offset"]
+def fcn2minfit(params,x,y):
+    return lorentzian(x, params) - y
+# HCN_data = sweep1_HCN
+# HCN_peak = HCN_peak_1
+# HCN_fit = HCN_data.iloc[0:fitting_range]
+# #print(HCN_fit)
+# HCN_fit_y = np.array(HCN_fit) #This has a pandas index
+# #print(HCN_fit_y, len(HCN_fit_y))
+# HCN_fit_x = x1[0:fitting_range]
+# #print(HCN_fit_x, len(HCN_fit_x))
+# #Try using lmfit
+# params = Parameters()
+# params.add('amplitude', value = 1)
+# params.add('gamma', value = 1)
+# params.add('center', value = HCN_peak[0])
+# params.add('offset', value = 0.1)
+# minner = Minimizer(fcn2minfit,params, fcn_args = (HCN_fit_x,HCN_fit_y))
+# result1 = minner.minimize(method = "leastsq")
+# report_fit(result1)
+# report1 = fit_report(result1)
+# fitted_y_HCN = lorentzian(HCN_fit_x,result1.params)
+def fit_cavity(cavity_data, cavity_peak, fitting_range): #Number of sample points, in total, to encase the peak
+    cavity_fit = cavity_data.iloc[int(cavity_peak - fitting_range/2): int(cavity_peak + fitting_range/2)]
+    #print(HCN_fit)
+    cavity_fit_y = cavity_fit.tolist() #This has a pandas index
+    print(cavity_fit_y, len(cavity_fit_y))
+    cavity_fit_x = range(int(cavity_peak - fitting_range/2),int(cavity_peak + fitting_range/2))
+    print(cavity_fit_x, len(cavity_fit_x))
+    #Try using lmfit
+    params = Parameters()
+    params.add('amplitude', value = 1)
+    params.add('gamma', value = 1)
+    params.add('center', value = cavity_peak)
+    params.add('offset', value = 0.1)
+    minner = Minimizer(fcn2minfit,params, fcn_args = (cavity_fit_x,cavity_fit_y))
+    result = minner.minimize()
+    report_fit(result)
+    report = fit_report(result)
+    fitted_y_cavity = lorentzian(cavity_fit_x,result.params)
+    variables = (cavity_fit_y, cavity_fit_x)
+    return fitted_y_cavity, result.params, variables
+fitted_y_cavity_1, params_1, variables = fit_cavity(sweep1_cavity,sweep1_cavity_peaks[3], fitting_range)
+sweep1_cavity_peaks[3] = params_1["center"]
+#%% Fit all the peaks
 #%% Fitting the HCN peaks to a Lorentzian
 # fitting_range = int(3e5)
 # from scipy.constants import pi
@@ -250,8 +297,7 @@ ax6[1].plot(FSRs_ix_x2, FSRs_ix2,'o')
 #ax4[1].plot(x_sweep1_peaks, cavity_calibration_normalized[x_sweep1_peaks.index],"o", markersize = 2.5)
 #ax4[1].plot(x_sweep2_peaks, cavity_calibration_normalized[x_sweep2_peaks.index],'o', markersize = 1)
 fig1, ax1 = plt.subplots(2,1, sharex = True)
-#ax1[0].plot(HCN_fit_x, fitted_y_HCN) #Obtained from fit block
-#ax1[0].plot(range(int(int(result1.params['center']) - result1.params['gamma']/2),int(int(result1.params['center']) + result1.params['gamma']/2)), [result1.params['amplitude']/2 + result1.params['offset']]*int(result1.params['gamma']))
+#ax1[0].plot(range(int(int(result1.params['center']) - result1.params['gamma']/2),int(int(result1.params['center']) + result1.params['gamma']/2)), [result1.params['amplitude']/2 + result1.params['offset']]*int(result1.params['gamma'])) - this plots the linewidth
 ax1[0].set_title("Sweep 1")
 ax1[1].plot(x1, sweep1_cavity,"-o", markersize = 0.5)
 ax1[0].plot(x1, sweep1_HCN)
@@ -263,6 +309,7 @@ ax1[1].plot(indexinit_sweep1,sweep1_cavity.iloc[indexinit_sweep1],'o')
 ax1[1].set_ylabel("Normalized volts")
 ax1[0].set_ylabel("Normalized volts")
 ax1[1].set_xlabel("Oscilloscope sample number")
+ax1[1].plot(variables[1], fitted_y_cavity_1 , label = "fit") #Obtained from fit block
 #ax1[1].plot(sweep1_cavity_peaks[init_peak:], sweep1_cavity.iloc[sweep1_cavity_peaks[init_peak:]], 'o', markersize = 1) #Unecessary line, causes some problems.
 fig2, ax2 = plt.subplots(2,1, sharex = True)
 ax2[0].set_title("Sweep 2")
@@ -276,6 +323,7 @@ ax2[1].plot(indexinit_sweep2,sweep2_cavity.iloc[indexinit_sweep2],'o')
 ax2[1].set_ylabel("Normalized volts")
 ax2[0].set_ylabel("Normalized volts")
 ax1[1].set_xlabel("Oscilloscope sample number")
+ax1[1].legend()
 #ax2[1].plot(sweep2_cavity_peaks[:final_peak], sweep2_cavity.iloc[sweep2_cavity_peaks[:final_peak]], 'o', markersize = 1)
 #%% Dispersion function
 def get_sweep_dispersion(sweep_cavity_indices, sweep_eom_indices, sweep_cavity, ax):
